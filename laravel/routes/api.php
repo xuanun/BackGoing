@@ -17,3 +17,28 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
+//用户路由 登录及退出
+$router->group(['prefix' => 'account'], function () use ($router) {
+    $router->post("/login", 'account\AccountController@login');//用户登录
+    $router->group(['middleware'=>['authToken']],function () use ($router) {
+        $router->post("/logout", 'account\AccountController@logout');//用户退出登录
+        $router->post("/get_all_dept", 'account\AccountController@getAllDept');//获取所有部门
+        $router->post("/edit_user_info", 'account\AccountController@editUserInfo');//用户修改资料
+        $router->post("/edit_password", 'account\AccountController@editPassword');//用户修改密码
+        $router->post("/app_user_list", 'account\AccountController@getAppUserList');//用户认证列表
+    });
+    $router->post("/test", 'index\IndexController@test');//测试接口
+});
+//用户路由  权限
+$router->group(['prefix' => 'role'], function () use ($router) {
+    $router->post("/login", 'account\AccountController@login');//用户登录
+    $router->group(['middleware'=>['authToken']],function () use ($router) {
+        $router->post("/logout", 'account\AccountController@logout');//用户退出登录
+        $router->post("/get_all_dept", 'account\AccountController@getAllDept');//获取所有部门
+        $router->post("/edit_user_info", 'account\AccountController@editUserInfo');//用户修改资料
+        $router->post("/edit_password", 'account\AccountController@editPassword');//用户修改密码
+        $router->post("/app_user_list", 'account\AccountController@getAppUserList');//用户认证列表
+    });
+    $router->post("/test", 'index\IndexController@test');//测试接口
+});
+
