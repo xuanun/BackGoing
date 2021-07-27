@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 class RolePermissions extends Model
 {
-    protected $table = "dove_role_permissions";
+    protected $table = "easy_web_role_permissions";
     const INVALID = 0;
     const NORMAL = 1;
     /**
@@ -43,8 +43,8 @@ class RolePermissions extends Model
                 $insertArray = [
                     'role_id' =>$role_id,
                     'permission_id' => $permissions_id,
-                    'updated_at' => time(),
-                    'created_at' =>time(),
+                    'updated_time' => time(),
+                    'created_time' =>time(),
                 ];
                 DB::table($this->table)->insertGetId($insertArray);
                 $return = ['code'=>20000,'msg'=>'新增成功', 'data'=>[]];

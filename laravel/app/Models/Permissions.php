@@ -8,20 +8,18 @@ use Illuminate\Support\Facades\DB;
 
 class Permissions extends Model
 {
-    protected $table = "dove_permissions";
+    protected $table = "easy_web_permissions";
     const INVALID = 0;
     const NORMAL = 1;
     /**
      * 查询权限路由里有没有 $url_path
      * @param  $url_path
-     * @param  $firm_id
      * @return mixed
      */
-    public function exitsUrlPath($url_path, $firm_id)
+    public function exitsUrlPath($url_path)
     {
         return DB::table($this->table)
-            ->where('url_path', $url_path)
-            ->where('firm_id', $firm_id)
+            ->where('url_path',$url_path)
             ->where('data_status',self::NORMAL)
             ->exists();
     }
@@ -29,15 +27,13 @@ class Permissions extends Model
     /**
      * 通过权限ID查询路由
      * @param  $per_ids
-     * @param  $firm_id
      * @return mixed
      */
-    public function getPermissions($per_ids, $firm_id)
+    public function getPermissions($per_ids)
     {
         $results = DB::table($this->table)
             ->select(DB::raw('url_path'))
             ->whereIn('id', $per_ids)
-            ->where('firm_id', $firm_id)
             ->get();
         return !empty($results) ?  $results : [];
     }

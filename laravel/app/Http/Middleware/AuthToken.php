@@ -46,7 +46,7 @@ class AuthToken extends Middleware
                 return $next($request);
             }
             else{
-                return response()->json(['code'=>40000, 'msg'=>'登录信息已经过期，请重新登录']);
+                return response()->json(['code'=>50000, 'msg'=>'登录信息已经过期，请重新登录']);
             }
         }
         else {

@@ -4,7 +4,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
-
 class User extends Model
 {
     protected $table = "easy_web_user";
@@ -24,7 +23,6 @@ class User extends Model
             ->first();
         return $result ? $result : '';
     }
-
     /**
      * @param $user_id
      * 用户登录. 更新用户信息
@@ -64,24 +62,37 @@ class User extends Model
     }
 
     /**
+     * @param $department_id
+     * @param $user_name
+     * @param $phone
+     * @param $role_id
+     * @param $start_time
+     * @param $end_time
      * @param $page_size
-     * @param $firm_id
-     * 查看所有人员列表信息（链表查询）
+     * 查看WEB人员列表信息（链表查询）
      * @return mixed
      */
-    public function getUserList($page_size, $firm_id)
+    public function getUserList($department_id, $user_name, $phone, $role_id, $start_time, $end_time, $page_size)
     {
-        $results =  DB::table('dove_user_factory as user_factory')
-            ->select(DB::raw('user.created_time as created_time, user.user_name as name, user.mobile as mobile, roles.name as role_name,
-            factory.name as factory_name, factory.id as factory_id, block.type_name as type_name, user_factory.block_id as block_id, user.data_status as data_status,
-            user_factory.user_id as user_id'))
-            ->leftJoin('dove_user as user', 'user.id', '=', 'user_factory.user_id')
-            ->leftJoin('dove_factory as factory', 'factory.id', '=', 'user_factory.factory_id')
-            ->leftJoin('dove_block as block', 'block.id', '=', 'user_factory.block_id')
-            ->leftJoin('dove_role_users as role_users', 'role_users.user_id', '=', 'user_factory.user_id')
-            ->leftJoin('dove_roles as roles', 'roles.id', '=', 'role_users.role_id')
-            ->where('user.is_del', self::INVALID)
-            ->where('user.firm_id', $firm_id)
+        $results =  DB::table('easy_web_user as user')
+            ->select(DB::raw('user.id as user_id, user_name, nick_name, account, avatar, gander, register_time, role.id as role_id, role.name as role_name, user.phone, department_id, org.name as org_name, user_status'))
+            ->leftJoin('easy_web_role_users as role_user', 'user.id', '=', 'role_user.user_id')
+            ->leftJoin('easy_web_roles as role', 'role.id', '=', 'role_user.role_id')
+            ->leftJoin('easy_web_organization as org', 'org.id', '=', 'user.department_id');
+        if($department_id)
+            $results = $results->where('department_id', $department_id);
+        if($user_name)
+            $results = $results->where('user_name', 'like','%'.$user_name.'%');
+        if($phone)
+            $results = $results->where('user.phone', $phone);
+        if($role_id)
+            $results = $results->where('role.id', $role_id);
+        if($start_time && $end_time){
+            $end_time = $end_time.' 23:59:59';
+            $results = $results->whereBetween('user.updated_time', [strtotime($start_time), strtotime($end_time)]);
+        }
+        $results =$results
+            ->orderBy('user.id','asc')
             ->paginate($page_size);
 
         $data = [
@@ -90,8 +101,9 @@ class User extends Model
             'pageSize'=>$page_size,
             'list'=>[]
         ];
-
+        $IMG_URL = env('IMG_URL');
         foreach($results as $v){
+            $v->avatar = empty($v->avatar) ? '' : $IMG_URL.$v->avatar;
             $data['list'][] = $v;
         }
         return  $data;
@@ -100,17 +112,17 @@ class User extends Model
 
     /**
      * @param $user_name
-     * @param $mobile
+     * @param $account
      * @param $password
-     * @param $rsg_time
-     * @param $firm_id
-     * @param $is_firm
+     * @param $phone
+     * @param $department_id
+     * @param $user_status
      * 新增用户
      * @return mixed
      */
-    public function addUser($user_name, $mobile, $password, $rsg_time, $firm_id, $is_firm)
+    public function addUser($user_name, $account, $password, $phone, $department_id, $user_status)
     {
-        $exists = $this->existsMobile($mobile);
+        $exists = $this->existsMobile($phone);
         $return = ['code'=>40004,'msg'=>'新增失败', 'data'=>['手机号已经存在']];
         if(!$exists)
         {
@@ -118,22 +130,20 @@ class User extends Model
                 $insertArray = [
                     'user_name' =>$user_name,
                     'nick_name' =>$user_name,
-                    'mobile' => $mobile,
-                    'password'=>$password,
-                    'avatar'=>$this->avatar,
-                    'level'=>1,
+                    'password'=> $password,
+                    'account' => $account,
+                    'avatar'=> $this->avatar,
                     'gander'=>1,
-                    'register_time'=>$rsg_time,
-                    'firm_id'=>$firm_id,
-                    'data_status'=>self::NORMAL,
-                    'is_del'=>self::INVALID,
-                    'is_firm'=> $is_firm,
+                    'register_time'=> date('Y-m-d H:i:s', time()),
+                    'phone'=> $phone,
+                    'department_id'=> $department_id,
+                    'user_status'=> $user_status,
                     'updated_time' => time(),
                     'created_time' => time(),
                 ];
                 $id = DB::table($this->table)->insertGetId($insertArray);
                 if($id){
-                    $return = ['code'=>20000,'msg'=>'新增成功', 'user_id'=>$id];
+                    $return = ['code'=>20000,'msg'=>'新增成功', 'data'=>['user_id'=>$id]];
                 }
                 else
                     DB::rollBack();
@@ -146,84 +156,76 @@ class User extends Model
     }
 
     /**
-     * @param $user_name
-     * @param $mobile
      * @param $user_id
-     * @param $rsg_time
-     * @param $firm_id
-     * 查看所有人员列表信息（链表查询）
+     * @param $user_name
+     * @param $account
+     * @param $phone
+     * @param $user_status
+     * 修改用户信息
      * @return mixed
      */
-    public function editUser($user_id, $user_name, $mobile, $rsg_time, $firm_id)
+    public function editUser($user_id, $user_name, $account, $phone, $user_status)
     {
-        $exists = $this->existsUserById($user_id);
-        $return = ['code'=>40004,'msg'=>'编辑失败', 'data'=>['账号不存在']];
-        if($exists)
-        {
-            try{
-                $UpdateArray = [
-                    'user_name' =>$user_name,
-                    'mobile' => $mobile,
-                    'register_time'=>$rsg_time,
-                    'firm_id'=>$firm_id,
-                    'updated_time' => time(),
-                ];
-                DB::table($this->table)
-                    ->where('id', $user_id)
-                    ->where('data_status', self::NORMAL)
-                    ->update($UpdateArray);
-                $return = ['code'=>20000,'msg'=>'编辑成功', 'user_id'=>$user_id];
-            }catch(\Exception $e){
-                DB::rollBack();
-                $return = ['code'=>40000,'msg'=>'编辑失败', 'data'=>[$e->getMessage()]];
-            }
+        try{
+            $UpdateArray = [
+                'user_name' =>$user_name,
+                'phone'=> $phone,
+                'user_status' => $user_status,
+                'updated_time' => time(),
+            ];
+            DB::table($this->table)
+                ->where('id', $user_id)
+                ->update($UpdateArray);
+            $return = ['code'=>20000,'msg'=>'编辑成功', 'data'=>['user_id'=>$user_id]];
+        }catch(\Exception $e){
+            DB::rollBack();
+            $return = ['code'=>40000,'msg'=>'编辑失败', 'data'=>[$e->getMessage()]];
         }
         return $return;
     }
-
-
     /**
-     * @param $mobile
-     * 查询手机号是否存在
+     * 查询账号是否存在
+     * @param $account
      * @return mixed
      */
-    public function existsMobile($mobile)
+    public function existUser($account)
     {
-        return DB::table($this->table)
-            ->where('mobile', $mobile)
-            ->where('data_status', self::NORMAL)
+        return  DB::table($this->table)
+            ->where('account', $account)
+            ->where('user_status', self::NORMAL)
             ->exists();
     }
 
     /**
-     * @param $user_id
-     * 软删除用户
+     * @param $phone
+     * 查询手机号是否存在
      * @return mixed
      */
-    public function delUserInfo($user_id)
+    public function existsMobile($phone)
     {
-        $exists = $this->existsUserById($user_id);
-        $return = ['code'=>40004,'msg'=>'删除失败', 'data'=>['账号不存在']];
-        if($exists)
-        {
-            try{
-                $UpdateArray = [
-                    'is_del' => self::NORMAL,
-                    'updated_time' => time(),
-                ];
-                $id = DB::table($this->table)
-                    ->where('id', $user_id)
-                    ->update($UpdateArray);
-                if($id){
-                    $return = ['code'=>20000,'msg'=>'删除成功', 'user_id'=>$id];
-                }
-                else
-                    DB::rollBack();
-            }catch(\Exception $e){
-                DB::rollBack();
-                $return = ['code'=>40000,'msg'=>'删除失败', 'data'=>[$e->getMessage()]];
-            }
+        return DB::table($this->table)
+            ->where('phone', $phone)
+            ->where('user_status', self::NORMAL)
+            ->exists();
+    }
+    /**
+     * @param $user_ids
+     * 批量删除用户
+     * @return mixed
+     */
+    public function delUserIds($user_ids)
+    {
+        DB::beginTransaction();
+        try{
+            DB::table($this->table)
+                ->whereIn('id', $user_ids)
+                ->delete();
+            $return = ['code'=>20000,'msg'=>'删除成功', 'data'=>[]];
+        }catch(\Exception $e){
+            DB::rollBack();
+            $return = ['code'=>40000,'msg'=>'删除失败', 'data'=>[$e->getMessage()]];
         }
+        DB::commit();
         return $return;
     }
 
@@ -243,7 +245,7 @@ class User extends Model
             ];
             $id = DB::table($this->table)
                 ->where('id', $user_id)
-                ->where('data_status', self::NORMAL)
+                ->where('user_status', self::NORMAL)
                 ->where('is_del', self::INVALID)
                 ->update($UpdateArray);
             if($id){
@@ -277,13 +279,12 @@ class User extends Model
             ];
             $id = DB::table($this->table)
                 ->where('id', $user_id)
-                ->where('data_status', self::NORMAL)
-                ->where('is_del', self::INVALID)
+                ->where('user_status', self::NORMAL)
                 ->update($UpdateArray);
-            $return = ['code'=>20000,'msg'=>'重置密码成功', 'data'=>[]];
+            $return = ['code'=>20000,'msg'=>'修改密码成功', 'data'=>[]];
         }catch(\Exception $e){
             DB::rollBack();
-            $return = ['code'=>40000,'msg'=>'重置密码失败', 'data'=>[$e->getMessage()]];
+            $return = ['code'=>40000,'msg'=>'修改密码失败', 'data'=>[$e->getMessage()]];
         }
         DB::commit();
         return $return;
@@ -309,33 +310,16 @@ class User extends Model
             ];
             DB::table($this->table)
                 ->where('id', $user_id)
-                ->where('data_status', self::NORMAL)
-                ->where('is_del', self::INVALID)
+                ->where('user_status', self::NORMAL)
                 ->update($UpdateArray);
-            $return = ['code'=>20000,'msg'=>'修改头像成功', 'data'=>["avatar" => env("IMAGE_URL").$avatar]];
+            $return = ['code'=>20000,'msg'=>'修改资料成功', 'data'=>["avatar" => env("IMAGE_URL").$avatar]];
         }catch(\Exception $e){
             DB::rollBack();
-            $return = ['code'=>40000,'msg'=>'修改头像失败', 'data'=>[$e->getMessage()]];
+            $return = ['code'=>40000,'msg'=>'修改资料失败', 'data'=>[$e->getMessage()]];
         }
         DB::commit();
         return $return;
     }
 
-
-    /**
-     * @param $firm_id
-     * 查询手机号是否存在
-     * @return mixed
-     */
-    public function getUserInfoByFirmId($firm_id)
-    {
-        return DB::table($this->table)
-            ->select(DB::raw('id, user_name, mobile, avatar'))
-            ->where('firm_id', $firm_id)
-            ->where('is_firm', 1)
-            ->where('data_status', self::NORMAL)
-            ->where('is_del', self::INVALID)
-            ->first();
-    }
 
 }

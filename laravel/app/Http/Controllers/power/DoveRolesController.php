@@ -16,60 +16,37 @@ use Illuminate\Support\Facades\Redis;
 class DoveRolesController extends Controller
 {
     /**
-     * 权限管理角色列表
+     * 角色列表
      * @param Request $request
      * @return mixed
      */
     public function roleList(Request $request)
     {
         $input = $request->all();
+        $role_name = isset($input['name']) ? $input['name'] : '';//角色名字
+        $start_time = isset($input['start_time']) ? $input['start_time'] : '';//开始时间
+        $end_time = isset($input['end_time']) ? $input['end_time'] : '';//结束时间
         $page_size = isset($input['page_size']) ? $input['page_size'] : 10;
-        $firm_id = $request->header('firmId');
         $page = isset($input['page']) ? $input['page'] : 1;
-        if(!$firm_id) return response()->json(['code'=>60000,'msg'=>'参数错误', 'data'=>['缺少企业ID']]);
-
         $model_Roles = new Roles();
-        $data = $model_Roles->getRoleUserList($page_size, $firm_id);
-        $list = array();
-        if(isset($data))
-        {
-            $list['code'] = 20000;
-            $list['msg'] = '';
-            $list['data'] = $data;
-        }else
-        {
-            $list['code'] = 22000;
-            $list['msg'] = '';
-            $list['data'] = [];
-        }
-        return  response()->json($list);
+        //return $role_name;
+        $data = $model_Roles->getRoleUserList($role_name, $start_time, $end_time, $page_size);
+        return  response()->json(['code'=>20000,'msg'=>'', 'data'=>$data]);
     }
 
     /**
-     * 管理员角色列表删除
+     * 批量删除角色
      * @param Request $request
      * @return mixed
      */
-    public function delRole(Request $request)
+    public function batchDelRole(Request $request)
     {
         //接收并校验参数
         $input = $request->all();
-        $role_id = isset($input['role_id']) ? $input['role_id'] : 0 ;
-        if(empty($role_id)) return  response()->json(['code'=>60000,'msg'=>'参数错误', 'data'=>[]]);
-
-        //查询是否存在该角色
+        $role_ids = isset($input['role_ids']) ? $input['role_ids'] : [];
+        if(empty($role_ids)) return  response()->json(['code'=>60000,'msg'=>'参数错误', 'data'=>[]]);
         $model_Roles = new Roles();
-        $exist_role = $model_Roles->existByRoleId($role_id);
-        if(empty($exist_role)) return response()->json(['code'=>40000,'msg'=>'该角色不存在', 'data'=>[]]);
-
-        //查询该角色下是否有用户
-        $model_role_users = new RoleUsers();
-        $exist_user = $model_role_users->existUserByRoleId($role_id);
-        if($exist_user)
-            return  response()->json(['code'=>40400,'msg'=>'当前角色用户数不为0，删除失败', 'data'=>[]]);
-
-        //满足条件软删除该角色
-        $data = $model_Roles->delRole($role_id);
+        $data = $model_Roles->delRole($role_ids);
         return  response()->json($data);
     }
 
@@ -83,22 +60,21 @@ class DoveRolesController extends Controller
         //接收并校验参数
         $input = $request->all();
         $name = isset($input['name']) ? $input['name'] : '';
-        $firm_id = isset($input['firm_id']) ? $input['firm_id'] : '';
-        if(empty($firm_id))
-        {
-            $firm_id = $request->header('firmId');
-        }
         $role_desc = isset($input['role_desc']) ? $input['role_desc'] : '';
-        if(empty($name)) return  response()->json(['code'=>60000,'msg'=>'参数错误, 角色名称不能为空', 'data'=>[]]);
-        if(empty($role_desc)) return  response()->json(['code'=>60000,'msg'=>'参数错误, 角色描述不能为空', 'data'=>[]]);
+        $role_sort = isset($input['role_sort']) ? $input['role_sort'] : '';
+        $role_check = isset($input['role_check']) ? $input['role_check'] : '';
+        $data_status = isset($input['data_status']) ? $input['data_status'] : '';
+        if(empty($name) || empty($role_sort) || empty($role_check))
+            return  response()->json(['code'=>60000,'msg'=>'参数错误', 'data'=>[]]);
 
+        if(empty($role_desc))
+            $role_desc = $name;
         //查询是否存在该角色名
         $model_Roles = new Roles();
-        $exist_role = $model_Roles->existByRoleName($name, $firm_id);
+        $exist_role = $model_Roles->existByRoleName($name);
         if($exist_role) return response()->json(['code'=>40000,'msg'=>'角色已经存在', 'data'=>[]]);
-
         //满足条件添加角色
-        $data = $model_Roles->addRole($name, $role_desc, $firm_id);
+        $data = $model_Roles->addRole($name, $role_desc, $role_check, $role_sort, $data_status);
         return  response()->json($data);
     }
 
@@ -113,18 +89,17 @@ class DoveRolesController extends Controller
         $input = $request->all();
         $role_id = isset($input['role_id']) ? $input['role_id'] : '';
         $name = isset($input['name']) ? $input['name'] : '';
-        $firm_id = isset($input['firm_id']) ? $input['firm_id'] : '';
-        if(empty($firm_id))
-        {
-            $firm_id = $request->header('firmId');
-        }
         $role_desc = isset($input['role_desc']) ? $input['role_desc'] : '';
-        if(empty($name)) return  response()->json(['code'=>60000,'msg'=>'参数错误, 角色名称不能为空', 'data'=>[]]);
-        if(empty($role_desc)) return  response()->json(['code'=>60000,'msg'=>'参数错误, 角色描述不能为空', 'data'=>[]]);
-
+        $role_sort = isset($input['role_sort']) ? $input['role_sort'] : '';
+        $role_check = isset($input['role_check']) ? $input['role_check'] : '';
+        $data_status = isset($input['data_status']) ? $input['data_status'] : 0;
+        if(empty($name) || empty($role_sort) || empty($role_check))
+            return  response()->json(['code'=>60000,'msg'=>'参数错误', 'data'=>[]]);
         //修改角色信息
         $model_Roles = new Roles();
-        $data = $model_Roles->editRole($role_id, $name, $role_desc, $firm_id);
+        $exist_role = $model_Roles->existByRoleNameById($role_id,$name);
+        if($exist_role) return response()->json(['code'=>40000,'msg'=>'角色已经存在', 'data'=>[]]);
+        $data = $model_Roles->editRole($role_id, $name, $role_desc, $role_sort, $role_check, $data_status);
         return  response()->json($data);
     }
 
@@ -143,22 +118,8 @@ class DoveRolesController extends Controller
         $cacheValue = $redis->get($cacheKey);
         $user_info = json_decode($cacheValue, true);
         $user_id = $user_info['id'];
-        $model_role_permissions = new RolePermissions();
-        $model_role_user = new RoleUsers();
         $model_permissions = new Permissions();
-        if($user_info['firm_id'] != 0)
-        {
-            //获取角色ID
-            $role_id = $model_role_user->getRoleIdByUserId($user_id);
-            if (empty($role_id)) return response()->json(['code' => 30000, 'msg' => '没有权限访问', 'data' => ['角色ID不存在']]);
-            //获取角色权限
-            $per_ids = $model_role_permissions->getPerIdByRoleId($role_id);
-            if (empty($per_ids)) return response()->json(['code' => 30000, 'msg' => '没有权限访问', 'data' => ['权限ID不存在']]);
-            //获取权限菜单
-            $results_data = $model_permissions->getPermissionsInfo($per_ids);
-        }else{
-            $results_data = $model_permissions->getAllPer();
-        }
+        $results_data = $model_permissions->getAllPer();
 
         $p_id_array = array();
         foreach ($results_data as $v)
@@ -188,36 +149,8 @@ class DoveRolesController extends Controller
             //return $data[$array[$i]['id']];
             $array[$i]['list'] = isset($data[$array[$i]['id']]['list']) ? $data[$array[$i]['id']]['list'] : [];
         }
-
         $return_data = ['code'=>20000,'msg'=>'', 'data'=>$array];
         return  response()->json($return_data);
-//        foreach ($results_data as $value)
-//        {
-//            $id = $value->id;
-//            $p_id = $value->p_id;
-//            if(isset($return_data['data'][$p_id]))
-//            {
-//                $return_data['data'][$p_id]['list'][] = $value;
-//            }else
-//            {
-//                $return_data['data'][$id]['id'] = $value->id;
-//                $return_data['data'][$id]['p_id'] = $value->p_id;
-//                $return_data['data'][$id]['name'] = $value->name;
-//                $return_data['data'][$id]['list'] = [];
-//            }
-//
-//            if(isset($return_data['data'][$id]) && isset($return_data['data'][$p_id]))
-//            {
-//                $return_data['data'][$id]['list'][] = $value;
-//            }else
-//            {
-//                $return_data['data'][$id]['id'] = $value->id;
-//                $return_data['data'][$id]['p_id'] = $value->p_id;
-//                $return_data['data'][$id]['name'] = $value->name;
-//                $return_data['data'][$id]['list'] = [];
-//            }
-//
-//        }
     }
 
     /**
@@ -276,10 +209,9 @@ class DoveRolesController extends Controller
         $p_id = isset($input['p_id']) ? $input['p_id'] : 0;
         $name = isset($input['name']) ? $input['name'] : '';
         $url_path = isset($input['url_path']) ? $input['url_path'] : 0;
-        $firm_id = $request->header('firm_id');
 
         $model_permissions = new Permissions();
-        $exits_path = $model_permissions->exitsUrlPath($url_path, $firm_id);
+        $exits_path = $model_permissions->exitsUrlPath($url_path);
         if($exits_path) return response()->json(['code'=>40000,'msg'=>'菜单权限已经存在, 添加失败', 'data'=>[]]);
         $return_data = $model_permissions->addPermission($p_id, $name, $url_path);
         return  response()->json($return_data);
@@ -323,4 +255,21 @@ class DoveRolesController extends Controller
         return  response()->json($return_data);
     }
 
+    /**
+     * 角色权限菜单
+     * @param Request $request
+     * @return mixed
+     */
+    public function rolePermissionsMenu(Request $request)
+    {
+        $input = $request->all();
+        $role_id= isset($input['role_id']) ? $input['role_id'] : '';
+        if(empty($role_id))
+            return  response()->json(['code'=>60000,'msg'=>'参数错误, 缺少角色ID', 'data'=>[]]);
+
+        $model_role_permissions = new RolePermissions();
+        $per_data = $model_role_permissions->getPerIdByRoleId($role_id);
+        $return_data = ['code'=>20000,'msg'=>'请求成功', 'data'=>$per_data];
+        return  response()->json($return_data);
+    }
 }

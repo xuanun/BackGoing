@@ -72,24 +72,24 @@ return [
             'url' => env('IMAGE_URL').'/storage/public/avatar',
         ],
 
-        'banner' => [
+        'images' => [
             'driver' => 'local',
-            'root' => storage_path('app/public/banner'),
+            'root' => storage_path('app/public/images'),
             'visibility' => 'public',
-            'url' => env('IMAGE_URL').'/storage/public/banner',
+            'url' => env('IMAGE_URL').'/storage/public/images',
         ],
 
-        'news' => [
+        'video' => [
             'driver' => 'local',
-            'root' => storage_path('app/public/news'),
+            'root' => storage_path('app/public/video'),
             'visibility' => 'public',
-            'url' => env('IMAGE_URL').'/storage/public/news',
+            'url' => env('APP_VIDEO_URL').'/storage/public/video',
         ],
-        'item' => [
+        'img' => [
             'driver' => 'local',
-            'root' => storage_path('app/public/item'),
+            'root' => storage_path('app/public/img'),
             'visibility' => 'public',
-            'url' => env('IMAGE_URL').'/storage/public/item',
+            'url' => env('IMAGE_URL').'/storage/public/img',
         ],
 
     ],
