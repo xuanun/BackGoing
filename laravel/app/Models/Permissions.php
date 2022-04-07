@@ -160,8 +160,9 @@ class Permissions extends Model
     public function getPermissionsInfo($per_ids)
     {
         return DB::table($this->table)
-            ->select(DB::raw("id, p_id, name"))
+            ->select(DB::raw("id, p_id, name, web_url_path"))
             ->whereIn('id', $per_ids)
+            ->orderBy('p_id', 'ASC') //通过id排序！2021-8-18
             ->get();
     }
     /**
@@ -173,5 +174,24 @@ class Permissions extends Model
         return DB::table($this->table)
             ->select(DB::raw("id, p_id, name"))
             ->get();
+    }
+
+    /**
+     * @param $p_id
+     * 查询指定父ID下的所有子ID
+     * @return mixed
+     */
+    public function getPerIdByPid($p_id)
+    {
+        $result = DB::table($this->table)
+            ->select(DB::raw('id'))
+            ->where('p_id', $p_id)
+            ->get();
+        $per_ids = array();
+        foreach ($result as $v)
+        {
+            $per_ids[] = $v->id;
+        }
+        return $per_ids;
     }
 }

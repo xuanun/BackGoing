@@ -51,6 +51,7 @@ class IssueController extends Controller
         $release_web_uid = isset($input['release_web_uid']) ? $input['release_web_uid'] : ''; //发布人ID
         $release_start_time = isset($input['release_web_uid']) ? $input['release_start_time'] : ''; //有效时间
         $release_end_time = isset($input['release_end_time']) ? $input['release_end_time'] : ''; //有效时间结束时间
+        if(empty($release_start_time) || empty($release_end_time)) return response()->json(['code' => 40000, 'msg' => '有效时间不能为空', 'data' => []]);
         $model_dynamic = new Dynamic();
         $category = 1; //类别 1:交通管制 2:施工占道 3:限行限号 4:气象预警
         $return_data = $model_dynamic->addData( $title, $content, $release_type, $release_web_uid, $release_start_time, $release_end_time, $category);
@@ -121,6 +122,7 @@ class IssueController extends Controller
         $release_web_uid = isset($input['release_web_uid']) ? $input['release_web_uid'] : ''; //发布人ID
         $release_start_time = isset($input['release_web_uid']) ? $input['release_start_time'] : ''; //有效时间
         $release_end_time = isset($input['release_end_time']) ? $input['release_end_time'] : ''; //有效时间
+        if(empty($release_start_time) || empty($release_end_time)) return response()->json(['code' => 40000, 'msg' => '有效时间不能为空', 'data' => []]);
         $model_dynamic = new Dynamic();
         $category = 2; //类别 1:交通管制 2:施工占道 3:限行限号 4:气象预警
         $return_data = $model_dynamic->addData( $title, $content, $release_type, $release_web_uid, $release_start_time, $release_end_time, $category);
@@ -191,6 +193,7 @@ class IssueController extends Controller
         $release_web_uid = isset($input['release_web_uid']) ? $input['release_web_uid'] : ''; //发布人ID
         $release_start_time = isset($input['release_web_uid']) ? $input['release_start_time'] : ''; //有效时间
         $release_end_time = isset($input['release_end_time']) ? $input['release_end_time'] : ''; //有效时间
+        if(empty($release_start_time) || empty($release_end_time)) return response()->json(['code' => 40000, 'msg' => '有效时间不能为空', 'data' => []]);
         $model_dynamic = new Dynamic();
         $category = 3; //类别 1:交通管制 2:施工占道 3:限行限号 4:气象预警
         $return_data = $model_dynamic->addData( $title, $content, $release_type, $release_web_uid, $release_start_time, $release_end_time, $category);
@@ -260,6 +263,7 @@ class IssueController extends Controller
         $release_web_uid = isset($input['release_web_uid']) ? $input['release_web_uid'] : ''; //发布人ID
         $release_start_time = isset($input['release_web_uid']) ? $input['release_start_time'] : ''; //有效时间
         $release_end_time = isset($input['release_end_time']) ? $input['release_end_time'] : ''; //有效时间
+        if(empty($release_start_time) || empty($release_end_time)) return response()->json(['code' => 40000, 'msg' => '有效时间不能为空', 'data' => []]);
         $model_dynamic = new Dynamic();
         $category = 4; //类别 1:交通管制 2:施工占道 3:限行限号 4:气象预警
         $return_data = $model_dynamic->addData( $title, $content, $release_type, $release_web_uid, $release_start_time, $release_end_time, $category);

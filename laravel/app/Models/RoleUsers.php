@@ -27,21 +27,6 @@ class RoleUsers extends Model
     }
 
     /**
-     * 通过用户ID查询角色信息
-     * @param  $user_id
-     * @return mixed
-     */
-    public function getRoleInfoByUserId($user_id)
-    {
-        return  DB::table($this->table)
-            ->select(DB::raw('role.id, role.name'))
-            ->leftJoin('dove_roles as role', 'dove_role_users.role_id','=', 'role.id')
-            ->where('dove_role_users.user_id', $user_id)
-            ->where('dove_role_users.data_status', self::NORMAL)
-            ->first();
-    }
-
-    /**
      * 通过角色ID查询是否存在用户ID
      * @param  $role_id
      * @return mixed

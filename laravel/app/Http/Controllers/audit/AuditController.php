@@ -27,11 +27,13 @@ class AuditController extends Controller
         $phone = isset($input['phone']) ? $input['phone'] : '';//手机号
         $start_time = isset($input['start_time']) ? $input['start_time'] : ''; //开始时间
         $end_time = isset($input['end_time']) ? $input['end_time'] : ''; //结束时间
+        $examine_start_time = isset($input['examine_start_time']) ? $input['examine_start_time'] : ''; //审核开始时间
+        $examine_end_time = isset($input['examine_end_time']) ? $input['examine_end_time'] : ''; //审核结束时间
         $page_size = isset($input['page_size']) ? $input['page_size'] : 1;
         $page =  isset($input['page']) ? $input['page'] : 1;
 
         $model_shoot_handy = new ShootHandy();
-        $shoot_data = $model_shoot_handy->getDataList($examine_type, $car_number, $type, $user_name, $phone, $start_time, $end_time, $page_size);
+        $shoot_data = $model_shoot_handy->getDataList($examine_type, $car_number, $type, $user_name, $phone, $start_time, $end_time, $examine_start_time,  $examine_end_time, $page_size);
         $return_data = ['code'=>20000,'msg'=>'', 'data'=>$shoot_data];
         return response()->json($return_data);
     }
@@ -49,6 +51,10 @@ class AuditController extends Controller
         $examine_web_uid = isset($input['examine_web_uid']) ? $input['examine_web_uid'] : ''; //审核人
         $examine_explain = isset($input['examine_explain']) ? $input['examine_explain'] : ''; //审核说明
         if(empty($shoot_ids)) return response()->json(['code'=>40000,'msg'=>'ID列表不能为空', 'data'=>[]]);
+//        //判断审核不通过时 审核说明是否为空
+//        if($examine_type == 0){
+//            if(empty($examine_explain)) return response()->json(['code'=>40000,'msg'=>'操作失败，审核说明不能为空', 'data'=>[]]);
+//        }
         $model_shoot_handy = new ShootHandy();
         $exist_type = $model_shoot_handy->existExamineType($shoot_ids, 2);
         if($exist_type) return response()->json(['code'=>40000,'msg'=>'所选列表中审核状态不全为未审核', 'data'=>[]]);

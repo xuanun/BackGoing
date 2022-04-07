@@ -2,8 +2,10 @@
 
 namespace App\Http;
 
+use App\Http\Middleware\AuthLog;
 use App\Http\Middleware\AuthPermissions;
 use App\Http\Middleware\AuthToken;
+use App\Http\Middleware\LoginLog;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 
 class Kernel extends HttpKernel
@@ -67,5 +69,7 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'authToken'=>AuthToken::class,
         'authPermissions'=>AuthPermissions::class,
+        'authLog'=>AuthLog::class,
+        'LoginLog'=>LoginLog::class,
     ];
 }

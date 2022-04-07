@@ -168,6 +168,12 @@ class DoveRolesController extends Controller
         if(empty($per_array)) return  response()->json(['code'=>60000,'msg'=>'参数错误, 角色权限不能为空', 'data'=>[]]);
         if(!isset($per_array[0])) return  response()->json(['code'=>60000,'msg'=>'参数错误', 'data'=>[]]);
 
+        //判断是否为超级管理员 超级管理员得权限不能修改
+        $model_Roles = new Roles();
+        $name = '超级管理员';
+        $exist_role = $model_Roles->existByRoleNameById($role_id,$name);
+        if(!$exist_role) return response()->json(['code'=>40000,'msg'=>'超级管理员权限不可修改', 'data'=>[]]);
+
         //查询是否存在该角色名
         $model_Roles = new Roles();
         $exist_role = $model_Roles->existByRoleId($role_id);

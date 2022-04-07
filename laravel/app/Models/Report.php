@@ -26,8 +26,12 @@ class Report extends Model
     public function getDataList($address, $examine_type, $release_type, $user_name, $phone, $c_start_time, $c_end_time, $e_start_time, $e_end_time,  $type, $page_size)
     {
         $results =  DB::table('easy_report as report')
-            ->select(DB::raw('report.report_id, report.app_user_id, report.type, report.longitude, report.latitude, report.address, report.explain, report.voice_url, report.pictures_url, report.examine_type, report.examine_time, report.examine_web_uid, report.examine_explain, report.release_type, report.release_web_uid, report.release_time, report.release_content, report.release_start_time, report.release_end_time, report.update_time, report.creation_time, e_web_user.user_name as e_user_name, r_web_user.user_name as r_user_name, user.user_name as app_user_name, user.phone'))
+            ->select(DB::raw('report.report_id, report.app_user_id, report.type, report.longitude, report.latitude, report.address, report.explain, report.voice_url, report.pictures_url, report.examine_type, report.examine_time, report.examine_web_uid, report.examine_explain, report.release_type, report.release_web_uid, report.release_time, report.release_content, report.release_start_time, report.release_end_time, report.update_time, report.creation_time, e_web_user.user_name as e_user_name, r_web_user.user_name as r_user_name, ident.real_name as app_user_name, user.phone'))
             ->leftJoin('easy_app_user as user', 'user.user_id', '=', 'report.app_user_id')
+            ->leftJoin('easy_ident as ident', function ($join) {
+                $join->on('user.user_id', '=', 'ident.app_user_id')
+                    ->where('ident.audit_type', '=', 1);
+            })
             ->leftJoin('easy_web_user as e_web_user', 'e_web_user.id', '=', 'report.examine_web_uid')
             ->leftJoin('easy_web_user as r_web_user', 'r_web_user.id', '=', 'report.release_web_uid');
         if($address)
@@ -38,8 +42,9 @@ class Report extends Model
             $results = $results->where('report.release_type', $release_type);
         if($phone)
             $results = $results->where('user.phone', 'like','%'.$phone.'%');
-        if($user_name)
-            $results = $results->where('user.user_name', 'like','%'.$user_name.'%');
+        if($user_name){
+            $results = $results->where('ident.real_name', 'like','%'.$user_name.'%')->where('ident.audit_type',  1);
+        }
         if($c_start_time && $c_end_time){
             $c_end_time = $c_end_time.' 23:59:59';
             $results = $results->whereBetween('report.creation_time', [strtotime($c_start_time), strtotime($c_end_time)]);
@@ -61,8 +66,8 @@ class Report extends Model
 
         $APP_IMG_URL = env('APP_IMG_URL');
         $APP_VOICE_URL = env('APP_VOICE_URL');
-        $array = array();
         foreach($results as $v){
+            $array = array();
             $v->voice_url = empty($v->voice_url) ? '' : $APP_VOICE_URL.$v->voice_url;
             $img_url = json_decode($v->pictures_url);
             foreach ($img_url as $value)
@@ -76,6 +81,7 @@ class Report extends Model
             $v->release_start_time = empty($v->release_start_time) ? '/' : date('Y-m-d H:i:s', $v->release_start_time);
             $v->release_end_time = empty($v->release_end_time) ? '/' : date('Y-m-d H:i:s', $v->release_end_time);
             $v->update_time = empty($v->update_time) ? '/' : date('Y-m-d H:i:s', $v->update_time);
+            $v->release_time_str = $v->release_start_time. '--'.$v->release_end_time;
             $v->type_name = '';
             if($v->type == 1)
             {
@@ -90,7 +96,7 @@ class Report extends Model
             if($v->type == 3)
             {
                 $v->type_name = "通讯故障";
-                $v->issue_content = $v->address. ','.$v->creation_time. ' 信号灯故障，请及时避让!';
+                $v->issue_content = $v->address. ','.$v->creation_time. ' 交通设备故障，请及时避让!';
             }
             $v->examine_name = '';
             $v->status = '';
@@ -145,8 +151,12 @@ class Report extends Model
     public function getComList($explain, $examine_type, $release_type, $user_name, $phone, $c_start_time, $c_end_time, $e_start_time, $e_end_time, $type, $page_size)
     {
         $results =  DB::table('easy_report as report')
-            ->select(DB::raw('report.report_id, report.app_user_id, report.type, report.longitude, report.latitude, report.address, report.explain, report.voice_url, report.pictures_url, report.examine_type, report.examine_time, report.examine_web_uid, report.examine_explain, report.release_type, report.release_web_uid, report.release_time, report.release_content, report.release_start_time, report.release_end_time, report.update_time, report.creation_time, e_web_user.user_name as e_user_name, r_web_user.user_name as r_user_name, user.user_name as app_user_name, user.phone'))
+            ->select(DB::raw('report.report_id, report.app_user_id, report.type, report.longitude, report.latitude, report.address, report.explain, report.voice_url, report.pictures_url, report.examine_type, report.examine_time, report.examine_web_uid, report.examine_explain, report.release_type, report.release_web_uid, report.release_time, report.release_content, report.release_start_time, report.release_end_time, report.update_time, report.creation_time, e_web_user.user_name as e_user_name, r_web_user.user_name as r_user_name, ident.real_name as app_user_name, user.phone'))
             ->leftJoin('easy_app_user as user', 'user.user_id', '=', 'report.app_user_id')
+            ->leftJoin('easy_ident as ident', function ($join) {
+                $join->on('user.user_id', '=', 'ident.app_user_id')
+                    ->where('ident.audit_type', '=', 1);
+            })
             ->leftJoin('easy_web_user as e_web_user', 'e_web_user.id', '=', 'report.examine_web_uid')
             ->leftJoin('easy_web_user as r_web_user', 'r_web_user.id', '=', 'report.release_web_uid');
         if($explain)
@@ -157,8 +167,9 @@ class Report extends Model
             $results = $results->where('report.release_type', $release_type);
         if($phone)
             $results = $results->where('user.phone', 'like','%'.$phone.'%');
-        if($user_name)
-            $results = $results->where('user.user_name', 'like','%'.$user_name.'%');
+        if($user_name){
+            $results = $results->where('ident.real_name', 'like','%'.$user_name.'%')->where('ident.audit_type',  1);
+        }
         if($c_start_time && $c_end_time){
             $results = $results->whereBetween('report.creation_time', [strtotime($c_start_time), strtotime($c_end_time)]);
         }
@@ -178,8 +189,8 @@ class Report extends Model
 
         $APP_IMG_URL = env('APP_IMG_URL');
         $APP_VOICE_URL = env('APP_VOICE_URL');
-        $array = array();
         foreach($results as $v){
+            $array = array();
             $v->voice_url = empty($v->voice_url) ? '' : $APP_VOICE_URL.$v->voice_url;
             $img_url = json_decode($v->pictures_url);
             foreach ($img_url as $value)
@@ -193,6 +204,7 @@ class Report extends Model
             $v->release_start_time = empty($v->release_start_time) ? '/' : date('Y-m-d H:i:s', $v->release_start_time);
             $v->release_end_time = empty($v->release_end_time) ? '/' : date('Y-m-d H:i:s', $v->release_end_time);
             $v->update_time = empty($v->update_time) ? '/' : date('Y-m-d H:i:s', $v->update_time);
+            $v->release_time_str = $v->release_start_time. '--'.$v->release_end_time;
             $v->type_name = '';
             if($v->type == 1)
             {
@@ -207,7 +219,7 @@ class Report extends Model
             if($v->type == 3)
             {
                 $v->type_name = "通讯故障";
-                $v->issue_content = $v->address.','.$v->creation_time . ' 信号灯故障，请及时避让!';
+                $v->issue_content = $v->address.','.$v->creation_time . ' 交通设备故障，请及时避让!';
             }
             $v->examine_name = '';
             $v->status = '';
@@ -341,15 +353,27 @@ class Report extends Model
         DB::beginTransaction();
         $return = array();
         try{
-            $updateArray = [
-                'release_type' => $release_type,
-                'release_web_uid' => $release_web_uid,
-                'release_content' => $release_content,
-                'release_start_time' => $release_start_time,
-                'release_end_time' => $release_end_time,
-                'release_time' => time(),
-                'update_time' => time(),
-            ];
+            if($release_type != 3){
+                $updateArray = [
+                    'release_type' => $release_type,
+                    'release_web_uid' => $release_web_uid,
+                    'release_content' => $release_content,
+                    'release_start_time' => $release_start_time,
+                    'release_end_time' => $release_end_time,
+                    'release_time' => time(),
+                    'update_time' => time(),
+                ];
+            }else
+            {
+                $updateArray = [
+                    'release_type' => $release_type,
+                    'release_web_uid' => $release_web_uid,
+                    'release_content' => $release_content,
+                    'release_start_time' => $release_start_time,
+                    'release_end_time' => $release_end_time,
+                    'update_time' => time(),
+                ];
+            }
             $id = DB::table($this->table)
                 ->where('report_id', $report_id)
                 ->where('type', $type)

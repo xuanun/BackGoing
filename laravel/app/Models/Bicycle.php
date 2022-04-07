@@ -6,29 +6,29 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 
-class Park extends Model
+class Bicycle extends Model
 {
-    protected $table = "easy_park";
+    protected $table = "easy_bicycle";
     const INVALID = 0;
     const NORMAL = 1;
 
     /**
      * 获取数据列表
-     * @param $park_code
-     * @param $park_name
+     * @param $site_code
+     * @param $site_name
      * @param $start_time
      * @param $end_time
      * @param $page_size
      * @return mixed
      */
-    public function getList($park_code, $park_name, $start_time, $end_time, $page_size)
+    public function getList($site_code, $site_name, $start_time, $end_time, $page_size)
     {
         $results =  DB::table($this->table)
-            ->select(DB::raw('id, park_code, park_name, longitude, latitude, sum_berth, surplus_berth, status, updated_time, created_time'));
-        if($park_code !== '')
-            $results = $results->where('park_code', 'like','%'.$park_code.'%');
-        if($park_name !== '')
-            $results = $results->where('park_name', 'like','%'.$park_name.'%');
+            ->select(DB::raw('id, site_code, site_name, longitude, latitude, sum_bike_vehicle, surplus_bike_vehicle, status, updated_time, created_time'));
+        if($site_code !== '')
+            $results = $results->where('site_code', 'like','%'.$site_code.'%');
+        if($site_name !== '')
+            $results = $results->where('site_name', 'like','%'.$site_name.'%');
         if($start_time && $end_time){
             $results = $results->whereBetween('updated_time', [strtotime($start_time), strtotime($end_time)]);
         }
@@ -55,26 +55,26 @@ class Park extends Model
     }
 
     /**
-     * @param $park_code
-     * @param $park_name
+     * @param $site_code
+     * @param $site_name
      * @param $longitude
      * @param $latitude
-     * @param $sum_berth
-     * @param $surplus_berth
+     * @param $sum_bike_vehicle
+     * @param $surplus_bike_vehicle
      * @param $status
      * 新增数据
      * @return mixed
      */
-    public function addData($park_code, $park_name, $longitude, $latitude, $sum_berth, $surplus_berth, $status)
+    public function addData($site_code, $site_name, $longitude, $latitude, $sum_bike_vehicle, $surplus_bike_vehicle, $status)
     {
         try{
             $insertArray = [
-                'park_code' => $park_code,
-                'park_name' => $park_name,
+                'site_code' => $site_code,
+                'site_name' => $site_name,
                 'longitude'=> $longitude,
                 'latitude' => $latitude,
-                'sum_berth'=> $sum_berth,
-                'surplus_berth' => $surplus_berth,
+                'sum_bike_vehicle'=> $sum_bike_vehicle,
+                'surplus_bike_vehicle' => $surplus_bike_vehicle,
                 'status'=> $status,
                 'updated_time' => time(),
                 'created_time' => time(),
@@ -90,26 +90,26 @@ class Park extends Model
 
     /**
      * @param $id
-     * @param $park_code
-     * @param $park_name
+     * @param $site_code
+     * @param $site_name
      * @param $longitude
      * @param $latitude
-     * @param $sum_berth
-     * @param $surplus_berth
+     * @param $sum_bike_vehicle
+     * @param $surplus_bike_vehicle
      * @param $status
      * 修改数据
      * @return mixed
      */
-    public function editData($id, $park_code, $park_name, $longitude, $latitude, $sum_berth, $surplus_berth, $status)
+    public function editData($id, $site_code, $site_name, $longitude, $latitude, $sum_bike_vehicle, $surplus_bike_vehicle, $status)
     {
         try{
             $UpdateArray = [
-                'park_code' => $park_code,
-                'park_name' => $park_name,
+                'site_code' => $site_code,
+                'site_name' => $site_name,
                 'longitude'=> $longitude,
                 'latitude' => $latitude,
-                'sum_berth'=> $sum_berth,
-                'surplus_berth' => $surplus_berth,
+                'sum_bike_vehicle'=> $sum_bike_vehicle,
+                'surplus_bike_vehicle' => $surplus_bike_vehicle,
                 'status'=> $status,
                 'updated_time' => time(),
             ];

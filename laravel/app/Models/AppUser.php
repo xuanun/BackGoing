@@ -25,9 +25,9 @@ class AppUser extends Model
             ->select(DB::raw('user.user_id, user.phone, user.user_name, ident.audit_type, user.creation_time as register_time, ident.real_name, ident.gender, ident.id_card_no, ident.front_img, ident.behind_img'))
             ->leftJoin('easy_ident as ident', 'user.user_id', '=', 'ident.app_user_id');
         if($user_name)
-            $results = $results->where('user.user_name', 'like','%'.$user_name.'%');
+            $results = $results->where('ident.real_name', 'like','%'.$user_name.'%');
         if($phone)
-            $results = $results->where('user.phone', $phone);
+            $results = $results->where('user.phone', 'like','%'.$phone.'%');
         if($start_time && $end_time){
             $end_time = $end_time.' 23:59:59';
             $results = $results->whereBetween('user.creation_time', [strtotime($start_time), strtotime($end_time)]);
@@ -46,7 +46,7 @@ class AppUser extends Model
         ];
         $APP_IMG_URL = env('APP_IMG_URL');
         foreach($results as $v){
-            $v->audit_type = empty($v->audit_type) ? 3 :$v->audit_type;
+            $v->audit_type = is_null($v->audit_type) ? 3 :$v->audit_type;
             $v->front_img = empty($v->front_img) ? '' : $APP_IMG_URL.$v->front_img;
             $v->behind_img = empty($v->behind_img) ? '' : $APP_IMG_URL.$v->behind_img;
             $v->gender_name = '';

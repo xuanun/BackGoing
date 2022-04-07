@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class Dynamic extends Model
 {
-    protected $table = "easy_Dynamic";
+    protected $table = "easy_dynamic";
     /**
      * 获取数据列表  交通管制 施工占道 限行限号
      * @param $category
@@ -39,7 +39,9 @@ class Dynamic extends Model
                 $results =  $results->where('dynamic.release_start_time', '>',time());
             }
             if($release_type == 3){
-                $results = $results->where('dynamic.release_end_time', '<',time())->orWhere('dynamic.release_type',4);
+                $results = $results->where(function ($query) use ($release_type){
+                    $query->where('dynamic.release_end_time', '<',time())->orWhere('dynamic.release_type',4);
+                });
             }
         }
         if($title !== '')
@@ -225,7 +227,25 @@ class Dynamic extends Model
         if($category)
             $results = $results->where('dynamic.category', $category);
         if($release_type)
-            $results = $results->where('dynamic.release_type', $release_type);
+        {
+            if($release_type == 1){
+                $results = $results->where(function ($query) use ($release_type){
+                    $query->where(function ($query) use ($release_type){
+                        $query->where('dynamic.is_collect', '=',1)->Where('dynamic.release_type',1);
+                    })->orWhere(function ($query) use ($release_type){
+                        $query->where('dynamic.release_start_time', '<=',time())->where('dynamic.release_end_time', '>=',time())->where('dynamic.release_type', '!=',4);
+                    });
+                });
+            }
+            if($release_type == 2){
+                $results = $results->where('dynamic.is_collect', '=',2)->where('dynamic.release_start_time', '>',time());
+            }
+            if($release_type == 3){
+                $results = $results->where(function ($query) use ($release_type){
+                    $query->where('dynamic.release_end_time', '<',time())->orWhere('dynamic.release_type',3)->orWhere('dynamic.release_type',4);
+                });
+            }
+        }
         if($title !== '')
             $results = $results->where('dynamic.title', 'like','%'.$title.'%');
         if($user_name)
@@ -270,8 +290,12 @@ class Dynamic extends Model
                         $v->type_name = "已发布";
                     }
                 }else
-                    $v->type_name = "已发布";
-
+                {
+                    if($v->release_type == 1)
+                        $v->type_name = "发布中";
+                    else
+                        $v->type_name = "已发布";
+                }
             }else
             {
                 $v->operation = '取消发布';

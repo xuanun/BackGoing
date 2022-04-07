@@ -161,7 +161,7 @@ class VideoController extends Controller
         $model_region = new Region();
         $model_vp_region = new VpRegion();
         $area_list = $model_region->getAllList();
-        $return_data = ['code'=>40000,'msg'=>'操作失败', 'data'=>[]];
+        $return_data = ['code'=>20000,'msg'=>'操作失败', 'data'=>[]];
         foreach ($area_list as $v)
         {
             if($v->GIs)

@@ -42,7 +42,7 @@ class Region extends Model
         if($start_time && $end_time){
             $results = $results->whereBetween('region.update_time', [strtotime($start_time), strtotime($end_time)]);
         }
-        $results= $results
+        $results = $results
             ->orderBy('region.region_id','desc')
             ->paginate($page_size);
         $data = [

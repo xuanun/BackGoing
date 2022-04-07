@@ -9,17 +9,20 @@ class User extends Model
     protected $table = "easy_web_user";
     const INVALID = 0;
     const NORMAL = 1;
-    protected $avatar = 'avatar.jpg';
+    protected $avatar = 'storage/avatar/avatar.jpg';
     /**
      * 获取用户信息
      * @param $account
+     * @param $status
      * @return string
      */
-    public function getUserInfoByAccount($account)
+    public function getUserInfoByAccount($account, $status)
     {
-        $result = DB::table($this->table)
-            ->where("account",$account)
-            ->where('user_status', self::NORMAL)
+        $result = DB::table('easy_web_user as user')
+            ->select(DB::raw('user.id as id, user_name, nick_name, password, account, avatar, gander, register_time, login_time, user.phone, department_id, dep.dept_name as department_name, user_status, user.created_time, user.updated_time'))
+            ->leftJoin('easy_web_department as dep', 'dep.id', '=', 'user.department_id');
+        $result = $result->where("account",$account)
+            ->where('user_status', $status)
             ->first();
         return $result ? $result : '';
     }

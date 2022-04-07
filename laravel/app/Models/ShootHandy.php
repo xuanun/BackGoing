@@ -18,14 +18,20 @@ class ShootHandy extends Model
      * @param $phone
      * @param $start_time
      * @param $end_time
+     * @param $examine_start_time
+     * @param $examine_end_time
      * @param $page_size
      * @return mixed
      */
-    public function getDataList($examine_type, $car_number, $type, $user_name, $phone, $start_time, $end_time, $page_size)
+    public function getDataList($examine_type, $car_number, $type, $user_name, $phone, $start_time, $end_time, $examine_start_time,  $examine_end_time, $page_size)
     {
         $results =  DB::table('easy_shoot_handy as shoot')
-            ->select(DB::raw('shoot.shoot_id, shoot.car_number, shoot.type, shoot.longitude, shoot.latitude, shoot.explain, shoot.voice_url, shoot.pictures_url, shoot.examine_type, shoot.examine_time, shoot.examine_web_uid, examine_explain, user.user_name as app_user_name, user.phone, web_user.user_name as web_user_name, shoot.update_time'))
+            ->select(DB::raw('shoot.shoot_id, shoot.car_number, shoot.type, shoot.longitude, shoot.latitude, shoot.explain, shoot.voice_url, shoot.pictures_url, shoot.examine_type, shoot.examine_time, shoot.examine_web_uid, examine_explain, ident.real_name as app_user_name, user.phone, web_user.user_name as web_user_name, shoot.creation_time as update_time'))
             ->leftJoin('easy_app_user as user', 'user.user_id', '=', 'shoot.app_user_id')
+            ->leftJoin('easy_ident as ident', function ($join) {
+                $join->on('user.user_id', '=', 'ident.app_user_id')
+                    ->where('ident.audit_type', '=', 1);
+            })
             ->leftJoin('easy_web_user as web_user', 'web_user.id', '=', 'shoot.examine_web_uid');
         if($examine_type !== '')
             $results = $results->where('shoot.examine_type', $examine_type);
@@ -35,11 +41,16 @@ class ShootHandy extends Model
             $results = $results->where('shoot.type', $type);
         if($phone !== '')
             $results = $results->where('user.phone', 'like','%'.$phone.'%');
-        if($user_name)
-            $results = $results->where('user.user_name', 'like','%'.$user_name.'%');
+        if($user_name){
+            $results = $results->where('ident.real_name', 'like','%'.$user_name.'%')->where('ident.audit_type',  1);
+        }
         if($start_time && $end_time){
             $end_time = $end_time.' 23:59:59';
-            $results = $results->whereBetween('shoot.update_time', [strtotime($start_time), strtotime($end_time)]);
+            $results = $results->whereBetween('shoot.creation_time', [strtotime($start_time), strtotime($end_time)]);
+        }
+        if($examine_start_time && $examine_end_time){
+            $examine_end_time = $examine_end_time.' 23:59:59';
+            $results = $results->whereBetween('shoot.examine_time', [strtotime($examine_start_time), strtotime($examine_end_time)]);
         }
         $results= $results
             ->orderBy('shoot_id','desc')

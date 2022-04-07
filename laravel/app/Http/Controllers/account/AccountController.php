@@ -10,8 +10,10 @@ use App\Models\Department;
 use App\Models\Permissions;
 use App\Models\Report;
 use App\Models\RolePermissions;
+use App\Models\Roles;
 use App\Models\RoleUsers;
 use App\Models\ShootHandy;
+use App\Models\Treaty;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redis;
@@ -43,7 +45,7 @@ class AccountController extends Controller
         if(!empty($cacheValue)){
             $data = json_decode($cacheValue, true);
         }else{
-            $object = $model_user->getUserInfoByAccount($account);
+            $object = $model_user->getUserInfoByAccount($account, 1);
             if(empty($object)) return response()->json(['code'=>60000,'msg'=>'参数错误, 账户不存在', 'data'=>[]]);
             $data =  json_decode(json_encode($object),true);
         }
@@ -65,6 +67,7 @@ class AccountController extends Controller
             $return['data']['user']['login_time'] = $data['login_time'];
             $return['data']['user']['phone'] = $data['phone'];
             $return['data']['user']['department_id'] = $data['department_id'];
+            $return['data']['user']['department_name'] = $data['department_name'];
             $return['data']['user']['created_time'] = $data['created_time'];
             $return['data']['user']['updated_time'] = $data['updated_time'];
             $return['time'] = time();
@@ -75,7 +78,7 @@ class AccountController extends Controller
                 $old_cacheKey = "travel_user_login_".$old_token;
                 $redis->del($old_cacheKey);
             }
-            $redis->set($user_key, $token);
+            $redis->set($user_key, $token, 86400);
         }
         $redis->set($cacheKey, json_encode($data));
         return response()->json($return);
@@ -176,8 +179,21 @@ class AccountController extends Controller
         else {
             return response()->json(['code'=>50000,'msg'=>'token 已经失效', 'data'=>[]]);
         }
+        $model_department = new Department();
+        $dept_data = $model_department->getInfo($dept_id);
+        $data['department_id'] = $dept_id;
+        $data['department_name'] = $dept_data->dept_name;
+        $data['phone'] = $phone;
+        $data['avatar'] = env('IMAGE_URL').$avatar;
+        $return_array = $data;
+        $data['avatar'] = $avatar;
+        $redis->set($cacheKey, json_encode($data));
         $user_id = $data['id'];
         $return_data = $model_user->editUserInfo($user_id, $avatar, $dept_id, $phone);
+        if($return_data['code'] == 20000)
+        {
+            $return_data['data'] = $return_array;
+        }
         return response()->json($return_data);
     }
 
@@ -288,10 +304,12 @@ class AccountController extends Controller
         $user_star = isset($input['user_star']) ? $input['user_star'] : '';//客户星级
         $id_card_no =  isset($input['id_card_no']) ? $input['id_card_no'] : '';//证件号码
         $phone = isset($input['phone']) ? $input['phone'] : '';//手机号
+        $audit_start_time = isset($input['audit_start_time']) ? $input['audit_start_time'] : ''; //认证开始时间
+        $audit_end_time = isset($input['audit_end_time']) ? $input['audit_end_time'] : ''; //认证结束时间
         $page_size = isset($input['page_size']) ? $input['page_size'] : 10;//每页条数
         $page =  isset($input['page']) ? $input['page'] : 1;//页数
         $model_app_ident = new AppIdent();
-        $ident_data = $model_app_ident->getList($audit_type, $real_name, $gender, $country, $audit_category,$start_time, $end_time, $user_star, $id_card_no, $phone, $web_user_ids, $page_size);
+        $ident_data = $model_app_ident->getList($audit_type, $real_name, $gender, $country, $audit_category,$start_time, $end_time, $user_star, $id_card_no, $phone, $web_user_ids, $audit_start_time, $audit_end_time, $page_size);
         $return_data = ['code'=>20000,'msg'=>'', 'data'=>$ident_data];
         return response()->json($return_data);
     }
@@ -440,5 +458,114 @@ class AccountController extends Controller
             return true;
         else
             return false;
+    }
+
+    /**
+     * 判断权限显示那些菜单
+     * @param Request $request
+     * @return mixed
+     */
+    public function checkUserMenu(Request $request)
+    {
+        $input = $request->all();
+        $user_id = isset($input['user_id']) ? $input['user_id'] : []; //用户ID
+        //获取角色ID
+        $model_role_users = new RoleUsers();
+        $role_id = $model_role_users->getRoleIdByUserId($user_id);
+
+        $model_role = new Roles();
+        $role_info = $model_role->getRoleName($role_id);
+        //获取主菜单
+        $p_id = 0;
+        $model_permissions = new Permissions();
+        $ids = $model_permissions->getPerIdByPid($p_id);
+
+        $p_menu = $model_permissions->getPermissionsInfo($ids);
+
+        //获取角色权限菜单
+        $model_role_permissions = new RolePermissions();
+        $per_info = $model_role_permissions->getPerInfo($role_id);
+        $return_data = array();
+        foreach ($per_info as $v){
+            foreach ($p_menu as $value){
+                if($v->p_id == $value->id)
+                {
+                    //return response()->json( $v->id);
+                    $return_data[$value->id]['id'] = $value->id;
+                    $return_data[$value->id]['name'] = $value->name;
+                    $return_data[$value->id]['web_url_path'] = $value->web_url_path;
+                    $return_data[$value->id]['data'][] = $v;
+                }
+            }
+        }
+        if($role_id == 1 && $role_info->role_name == '超级管理员')
+        {
+            $array['id'] = $value->id + 1;
+            $array['name'] = '协议管理';
+            $array['web_url_path'] = '/agreement';
+            $arr1['name'] = '用户协议';
+            $arr1['p_id'] = $value->id + 1;
+            $arr1['web_url_path'] = '/agreement/agreement-list';
+            $arr2['name'] = '事故指南';
+            $arr2['p_id'] = $value->id + 1;
+            $arr2['web_url_path'] = '/agreement/accident-guide';
+            $arr3['name'] = '隐私政策';
+            $arr3['p_id'] = $value->id + 1;
+            $arr3['web_url_path'] = '/agreement/privacy-policy';
+            $arr = [$arr1, $arr2, $arr3];
+            $array['data'] = $arr;
+            $return_data[] = $array;
+        }
+        $return_data = array_values($return_data);
+        return response()->json(['code'=>20000, 'msg'=>'', 'data'=>$return_data]);
+    }
+
+    /**
+     * 协议管理 查看列表
+     * @param Request $request
+     * @return mixed
+     */
+    public function managementList(Request $request)
+    {
+        $input = $request->all();
+        $user_id = isset($input['user_id']) ? $input['user_id'] : []; //用户ID
+        //获取角色ID
+        $model_role_users = new RoleUsers();
+        $role_id = $model_role_users->getRoleIdByUserId($user_id);
+
+        $model_role = new Roles();
+        $role_info = $model_role->getRoleName($role_id);
+
+        if($role_info->role_name != '超级管理员')
+            return response()->json(['code'=>30000, 'msg'=>'不是超级管理员，无权访问', 'data'=>[]]);
+
+        $model_treaty = new Treaty();
+        $return_data = $model_treaty->getList();
+        return response()->json(['code'=>20000, 'msg'=>'', 'data'=>$return_data]);
+    }
+
+    /**
+     * 协议管理 编辑
+     * @param Request $request
+     * @return mixed
+     */
+    public function editManagement(Request $request)
+    {
+        $input = $request->all();
+        $user_id = isset($input['user_id']) ? $input['user_id'] : []; //用户ID
+        $treaty_id = isset($input['treaty_id']) ? $input['treaty_id'] : 0; //协议ID
+        $content = isset($input['content']) ? $input['content'] : ''; //协议内容
+        if(empty($content)) return response()->json(['code'=>40000, 'msg'=>'协议内容不能为空', 'data'=>[]]);
+        //获取角色ID
+        $model_role_users = new RoleUsers();
+        $role_id = $model_role_users->getRoleIdByUserId($user_id);
+
+        $model_role = new Roles();
+        $role_info = $model_role->getRoleName($role_id);
+        if($role_info->role_name != '超级管理员')
+            return response()->json(['code'=>30000, 'msg'=>'不是超级管理员，无权访问', 'data'=>[]]);
+        $model_treaty = new Treaty();
+        $return_data = $model_treaty->editContent($treaty_id, $content);
+        return response()->json($return_data);
     }
 }

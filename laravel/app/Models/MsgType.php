@@ -5,29 +5,32 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
-class Department extends Model
+class MsgType extends Model
 {
-    protected $table = "easy_web_department";
+    protected $table = "easy_msg_type";
+
     /**
-     * 获取全部部门
+     * 获取全部数据
      * @return mixed
      */
     public function getAll()
     {
         return $result = DB::table($this->table)
-            ->select(DB::raw('id, dept_name, intro'))
+            ->select(DB::raw('id, p_id, type_name'))
             ->get();
     }
+
     /**
-     * 通过ID获取部门
+     * 根据ID获取数据
      * @param $id
      * @return mixed
      */
-    public function getInfo($id)
+    public function getTypeName($id)
     {
-        return $result = DB::table($this->table)
-            ->select(DB::raw('id, dept_name, intro'))
+        $result = DB::table($this->table)
+            ->select(DB::raw('type_name'))
             ->where('id', $id)
             ->first();
+        return empty($result->type_name) ? '' : $result->type_name;
     }
 }

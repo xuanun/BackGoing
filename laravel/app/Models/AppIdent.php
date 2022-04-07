@@ -22,15 +22,17 @@ class AppIdent extends Model
      * @param $id_card_no
      * @param $phone
      * @param $web_user_ids
+     * @param $audit_start_time
+     * @param $audit_end_time
      * @param $page_size
      *
      * 查看所有人员列表信息（链表查询）
      * @return mixed
      */
-    public function getList($audit_type, $real_name, $gender, $country, $audit_category,$start_time, $end_time, $user_star, $id_card_no, $phone, $web_user_ids, $page_size)
+    public function getList($audit_type, $real_name, $gender, $country, $audit_category,$start_time, $end_time, $user_star, $id_card_no, $phone, $web_user_ids, $audit_start_time, $audit_end_time, $page_size)
     {
         $results =  DB::table('easy_ident as ident')
-            ->select(DB::raw('user.user_id, user.user_name, ident.ident_id as ident_id, ident.update_time as update_time, ident.front_img, ident.behind_img, ident.real_name, ident.gender, ident.country, ident.id_card_no, audit_web_user_id, web_user.user_name as web_user_name, audit_type, audit_remarks, audit_time, user.phone'))
+            ->select(DB::raw('user.user_id, user.user_name, ident.ident_id as ident_id, ident.creation_time as update_time, ident.front_img, ident.behind_img, ident.real_name, ident.gender, ident.country, ident.id_card_no, audit_web_user_id, web_user.user_name as web_user_name, audit_type, audit_remarks, audit_time, user.phone'))
             ->leftJoin('easy_app_user as user', 'user.user_id', '=', 'ident.app_user_id')
             ->leftJoin('easy_web_user as web_user', 'web_user.id', '=', 'ident.audit_web_user_id');
         if($audit_type != '')
@@ -45,7 +47,11 @@ class AppIdent extends Model
             $results = $results->where('ident.audit_category', $audit_category);
         if($start_time && $end_time){
             $end_time = $end_time.' 23:59:59';
-            $results = $results->whereBetween('ident.update_time', [strtotime($start_time), strtotime($end_time)]);
+            $results = $results->whereBetween('ident.creation_time', [strtotime($start_time), strtotime($end_time)]);
+        }
+        if($audit_start_time && $audit_end_time){
+            $audit_end_time = $audit_end_time.' 23:59:59';
+            $results = $results->whereBetween('ident.audit_time', [strtotime($audit_start_time), strtotime($audit_end_time)]);
         }
         if($user_star)
             $results = $results->where('ident.user_star', $user_star);

@@ -2,38 +2,34 @@
 
 
 namespace App\Models;
+
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
-
-class Park extends Model
+class Publicity extends Model
 {
-    protected $table = "easy_park";
-    const INVALID = 0;
-    const NORMAL = 1;
-
+    protected $table = "easy_publicity";
     /**
      * 获取数据列表
-     * @param $park_code
-     * @param $park_name
+     * @param $title
      * @param $start_time
      * @param $end_time
      * @param $page_size
      * @return mixed
      */
-    public function getList($park_code, $park_name, $start_time, $end_time, $page_size)
+    public function getList($title, $start_time, $end_time, $page_size)
     {
-        $results =  DB::table($this->table)
-            ->select(DB::raw('id, park_code, park_name, longitude, latitude, sum_berth, surplus_berth, status, updated_time, created_time'));
-        if($park_code !== '')
-            $results = $results->where('park_code', 'like','%'.$park_code.'%');
-        if($park_name !== '')
-            $results = $results->where('park_name', 'like','%'.$park_name.'%');
+        $results =  DB::table('easy_publicity as pub')
+            ->select(DB::raw('pub.id, pub.title, web_user.user_name, pub.video, pub.status, pub.updated_time'))
+            ->leftJoin('easy_web_user as web_user', 'web_user.id', '=', 'pub.web_user_id');
+        if($title)
+            $results = $results->where('pub.title', 'like','%'.$title.'%');
         if($start_time && $end_time){
-            $results = $results->whereBetween('updated_time', [strtotime($start_time), strtotime($end_time)]);
+            $results = $results->whereBetween('pub.updated_time', [strtotime($start_time), strtotime($end_time)]);
         }
         $results= $results
-            ->orderBy('id','desc')
+            ->orderBy('pub.id','desc')
             ->paginate($page_size);
         $data = [
             'total'=>$results->total(),
@@ -41,12 +37,13 @@ class Park extends Model
             'pageSize'=>$page_size,
             'list'=>[]
         ];
+        $VIDEO_URL = env('VIDEO_URL');
         foreach($results as $v){
-            $v->lng_lat = $v->longitude.','.$v->latitude;
-            $v->updated_time = empty($v->updated_time) ? '/' : date('Y-m-d H:i:s', $v->updated_time);
-            $v->created_time = empty($v->created_time) ? '/' : date('Y-m-d H:i:s', $v->created_time);
+            $v->video_url = empty($v->video) ? '' : $VIDEO_URL.$v->video;
+            $v->updated_time = date('Y-m-d H:i:s', $v->updated_time);
+            $v->state_name = '';
             if($v->status == 0)
-                $v->state_name = "关闭";
+                $v->state_name = "异常";
             if($v->status == 1)
                 $v->state_name  = "正常";
             $data['list'][] = $v;
@@ -55,32 +52,26 @@ class Park extends Model
     }
 
     /**
-     * @param $park_code
-     * @param $park_name
-     * @param $longitude
-     * @param $latitude
-     * @param $sum_berth
-     * @param $surplus_berth
+     * @param $title
+     * @param $video
      * @param $status
+     * @param $user_id
      * 新增数据
      * @return mixed
      */
-    public function addData($park_code, $park_name, $longitude, $latitude, $sum_berth, $surplus_berth, $status)
+    public function addData($title, $video, $status, $user_id)
     {
         try{
             $insertArray = [
-                'park_code' => $park_code,
-                'park_name' => $park_name,
-                'longitude'=> $longitude,
-                'latitude' => $latitude,
-                'sum_berth'=> $sum_berth,
-                'surplus_berth' => $surplus_berth,
+                'web_user_id' => $user_id,
+                'title' => $title,
+                'video' => $video,
                 'status'=> $status,
                 'updated_time' => time(),
                 'created_time' => time(),
             ];
             $id = DB::table($this->table)->insertGetId($insertArray);
-            $return = ['code'=>20000,'msg'=>'新增成功', 'data'=>['id'=>$id]];
+            $return = ['code'=>20000,'msg'=>'新增成功', 'data'=>['vp_id'=>$id]];
         }catch(\Exception $e){
             DB::rollBack();
             $return = ['code'=>40000,'msg'=>'新增失败', 'data'=>[$e->getMessage()]];
@@ -90,26 +81,20 @@ class Park extends Model
 
     /**
      * @param $id
-     * @param $park_code
-     * @param $park_name
-     * @param $longitude
-     * @param $latitude
-     * @param $sum_berth
-     * @param $surplus_berth
+     * @param $title
+     * @param $video
      * @param $status
+     * @param $user_id
      * 修改数据
      * @return mixed
      */
-    public function editData($id, $park_code, $park_name, $longitude, $latitude, $sum_berth, $surplus_berth, $status)
+    public function editData($id, $title, $video, $status, $user_id)
     {
         try{
             $UpdateArray = [
-                'park_code' => $park_code,
-                'park_name' => $park_name,
-                'longitude'=> $longitude,
-                'latitude' => $latitude,
-                'sum_berth'=> $sum_berth,
-                'surplus_berth' => $surplus_berth,
+                'web_user_id' => $user_id,
+                'title' => $title,
+                'video' => $video,
                 'status'=> $status,
                 'updated_time' => time(),
             ];

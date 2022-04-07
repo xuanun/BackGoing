@@ -50,6 +50,7 @@ class IndexController extends Controller
         $department_id = isset($input['department_id']) ? $input['department_id'] : ''; //部门ID
         $user_status = isset($input['user_status']) ? $input['user_status'] : ''; //状态
         $role_id = isset($input['role_id']) ? $input['role_id'] : '';//角色ID
+        if(empty($user_name) || empty($account) || empty($phone) || empty($department_id) || empty($role_id)) return response()->json(['code'=>60000,'msg'=>'参数错误', 'data'=>[]]);
         $model_web_initial = new Initial();
         $str_initial = $model_web_initial->getInitial();
         $password = encrypt($str_initial);
@@ -80,12 +81,13 @@ class IndexController extends Controller
         $user_name = isset($input['user_name']) ? $input['user_name'] : ''; //用户名
         $account = isset($input['account']) ? $input['account'] : ''; //账号
         $phone = isset($input['phone']) ? $input['phone'] : '';//手机号
+        $old_user_status = isset($input['old_user_status']) ? $input['old_user_status'] : ''; //修改之前状态
         $user_status = isset($input['user_status']) ? $input['user_status'] : ''; //状态
         $role_id = isset($input['role_id']) ? $input['role_id'] : '';//角色ID
 
         $model_web_user = new User();
         $model_role_user = new RoleUsers();
-        $user_info =  $model_web_user->getUserInfoByAccount($account);
+        $user_info =  $model_web_user->getUserInfoByAccount($account, $old_user_status);
         if(empty($user_info)) return response()->json(['code'=>40000,'msg'=>'账户不存在', 'data'=>[]]);
         $data =  json_decode(json_encode($user_info),true);
         if($data['phone'] != $phone){

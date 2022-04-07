@@ -219,4 +219,17 @@ class Roles extends Model
             return  ['code'=>40000,'msg'=>'新增失败', 'data'=>[]];
         }
     }
+
+    /**
+     * 获取角色信息
+     * @param $role_id
+     * @return mixed
+     */
+    public function getRoleName( $role_id)
+    {
+        return  DB::table($this->table)
+            ->select(DB::raw('id as role_id, name as role_name'))
+            ->where('id', $role_id)
+            ->first();
+    }
 }

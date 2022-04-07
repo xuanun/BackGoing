@@ -17,7 +17,7 @@ class ParkController extends Controller
     public function parkList(Request $request)
     {
         $input = $request->all();
-        $park_code = isset($input['park_code']) ? $input['park_name'] : ''; //停车场code
+        $park_code = isset($input['park_code']) ? $input['park_code'] : ''; //停车场code
         $park_name = isset($input['park_name']) ? $input['park_name'] : ''; //停车场名称
         $start_time = isset($input['start_time']) ? $input['start_time'] : ''; //开始时间
         $end_time = isset($input['end_time']) ? $input['end_time'] : ''; //结束时间
@@ -38,7 +38,7 @@ class ParkController extends Controller
     public function addPark(Request $request)
     {
         $input = $request->all();
-        $park_code = isset($input['park_code']) ? $input['park_name'] : ''; //停车场code
+        $park_code = isset($input['park_code']) ? $input['park_code'] : ''; //停车场code
         $park_name = isset($input['park_name']) ? $input['park_name'] : ''; //停车场名称
         $longitude = isset($input['longitude']) ? $input['longitude'] : 0;//经度
         $latitude = isset($input['latitude']) ? $input['latitude'] : 0;//纬度
@@ -63,7 +63,7 @@ class ParkController extends Controller
     {
         $input = $request->all();
         $id = isset($input['id']) ? $input['id'] : 0;//数据ID
-        $park_code = isset($input['park_code']) ? $input['park_name'] : ''; //停车场code
+        $park_code = isset($input['park_code']) ? $input['park_code'] : ''; //停车场code
         $park_name = isset($input['park_name']) ? $input['park_name'] : ''; //停车场名称
         $longitude = isset($input['longitude']) ? $input['longitude'] : 0;//经度
         $latitude = isset($input['latitude']) ? $input['latitude'] : 0;//纬度
