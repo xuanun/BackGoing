@@ -3,6 +3,10 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -50,6 +54,18 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $exception)
     {
+        if ($exception instanceof UnauthorizedHttpException) {
+            return response()->json(['code'=>404,'msg'=>'请求失败', 'data'=>[]]);
+        } elseif ($exception instanceof ValidationException) {
+            return response()->json(['code'=>404,'msg'=>'请求失败', 'data'=>[]]);
+        } elseif ($exception instanceof MethodNotAllowedHttpException) {
+            #请求方法不被允许
+            return response()->json(['code'=>404,'msg'=>'请求失败', 'data'=>[]]);
+        } elseif ($exception instanceof ErrorException) {
+            return response()->json(['code'=>404,'msg'=>'请求失败', 'data'=>[]]);
+        } elseif ($exception instanceof Throwable) {
+            return response()->json(['code'=>404,'msg'=>'请求失败', 'data'=>[]]);
+        }
         return parent::render($request, $exception);
     }
 }

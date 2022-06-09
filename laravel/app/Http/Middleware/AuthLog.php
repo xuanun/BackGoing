@@ -94,7 +94,10 @@ class AuthLog extends Middleware
         $user_phone = $data['phone'];
         $user_dept = $data['department_name'];
         $return_data = $response->original;
-        $code = $return_data['code'];
+        $code = 404;
+        if(isset($return_data['code'])){
+            $code = $return_data['code'];
+        }
         $web_ip = $request->ip();
         $status = '操作失败';
         if($code == 20000)

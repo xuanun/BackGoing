@@ -127,6 +127,7 @@ class IndexController extends Controller
     /**
      * 用户管理 --App用户管理
      * @param Request $request
+     * @throws \Illuminate\Validation\ValidationException
      * @return mixed
      */
     public function getAppUserList(Request $request)
@@ -138,6 +139,7 @@ class IndexController extends Controller
         $end_time = isset($input['end_time']) ? $input['end_time'] : ''; //结束时间
         $page_size = isset($input['page_size']) ? $input['page_size'] : 1;
         $page =  isset($input['page']) ? $input['page'] : 1;
+
         $model_app_ident = new AppUser();
         $ident_data = $model_app_ident->getList($user_name, $phone, $start_time, $end_time, $page_size);
         $return_data = ['code'=>20000,'msg'=>'', 'data'=>$ident_data];

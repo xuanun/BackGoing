@@ -48,7 +48,10 @@ class LoginLog extends Middleware
         $token = '';
         $url_path = $request->path();
         $url_path_arr = explode("/",$url_path);
-        $code = $return_data['code'];
+        $code = 404;
+        if(isset($return_data['code'])){
+            $code = $return_data['code'];
+        }
         $web_ip = $request->ip();
         $type = '';
         //判断操作类型

@@ -32,11 +32,11 @@ class AccountController extends Controller
         $input = $request->all();
         $account = $input['account'] ? $input['account'] : '';
         $password = $input['password'] ? $input['password'] : '';
-
 //        $obj_password = encrypt($password);
 //        return $obj_password;
         if(empty($account)) return response()->json(['code'=>60000,'msg'=>'参数错误, 账号不能为空', 'data'=>[]]);
         if(empty($password)) return response()->json(['code'=>60000,'msg'=>'参数错误, 密码不能为空', 'data'=>[]]);
+        $password = $this->passwordDecrypt($password);
         $token = Str::random (64);
         $redis = Redis::connection('default');
         $cacheKey = "travel_user_login_".$token;
@@ -46,7 +46,7 @@ class AccountController extends Controller
             $data = json_decode($cacheValue, true);
         }else{
             $object = $model_user->getUserInfoByAccount($account, 1);
-            if(empty($object)) return response()->json(['code'=>60000,'msg'=>'参数错误, 账户不存在', 'data'=>[]]);
+            if(empty($object)) return response()->json(['code'=>60000,'msg'=>'参数错误, 账户不存在或被停用', 'data'=>[]]);
             $data =  json_decode(json_encode($object),true);
         }
         if(empty($data)) return response()->json(['code'=>40000,'msg'=>'账号不存在', 'data'=>[]]);
@@ -134,10 +134,17 @@ class AccountController extends Controller
         if(empty($password)) return response()->json(['code'=>60000,'msg'=>'新密码不能为空', 'data'=>[]]);
         if(empty($enterPassword)) return response()->json(['code'=>60000,'msg'=>'确认密码不能为空', 'data'=>[]]);
         if($password != $enterPassword) return response()->json(['code'=>40000,'msg'=>'两次密码输入不一致', 'data'=>[]]);
+        $old_password = $this->passwordDecrypt($old_password);
+        $password = $this->passwordDecrypt($password);
+        $enterPassword = $this->passwordDecrypt($enterPassword);
+        if(empty($old_password) || empty($password) || empty($enterPassword)) return response()->json(['code'=>40000,'msg'=>'参数错误', 'data'=>[]]);
         if($old_password == $password) return response()->json(['code'=>40000,'msg'=>'新密码不能与旧密码一样', 'data'=>[]]);
+        if(strlen($password)<6 || strlen($password)>20) return response()->json(['code'=>40000,'msg'=>'密码长度为6--20', 'data'=>[]]);
         if($old_password !=  decrypt($data['password']))
             return response()->json(['code'=>40000,'msg'=>'原密码不正确','data'=>[]]);
-
+        if(!preg_match("/^(([a-z]+[0-9]+)|([0-9]+[a-z]+))[a-z0-9._*%#@]*$/i",$password)){
+            return response()->json(['code'=>40000,'msg'=>'密码必须由数字和字母的组合而成','data'=>[]]);
+        }
         $user_id = $data['id'];
         $e_password = encrypt($password);
         $return_data = $model_user->editUserPassword($user_id, $e_password);
@@ -568,4 +575,20 @@ class AccountController extends Controller
         $return_data = $model_treaty->editContent($treaty_id, $content);
         return response()->json($return_data);
     }
+
+    /**
+     * 解密
+     * @param Request $password
+     * @return mixed
+     */
+    public function passwordDecrypt($password)
+    {
+        $method = 'AES-128-CBC';
+        $key = env('ACS_KEY');
+        $iv = env('ACS_IV');
+        $decrypted = openssl_decrypt($password, $method, $key, OPENSSL_ZERO_PADDING, $iv);
+        return trim($decrypted);
+
+    }
+
 }

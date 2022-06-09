@@ -30,7 +30,7 @@ class LoginLogs  extends Model
             $results = $results->where('user_name', 'like', $user_name);
         }
         if($status){
-            $results = $results->where('status', 'like', $status);
+            $results = $results->where('status', 'like', '%'.$status.'%');
         }
         if($start_time && $end_time){
             $results = $results->whereBetween('created_time', [$start_time, $end_time]);

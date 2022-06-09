@@ -34,7 +34,7 @@ class Logs  extends Model
             $results = $results->where('type',  $type);
         }
         if($status){
-            $results = $results->where('status', 'like',$status);
+            $results = $results->where('status', 'like','%'.$status.'%');
         }
         if($start_time && $end_time){
             $results = $results->whereBetween('created_time', [$start_time, $end_time]);
